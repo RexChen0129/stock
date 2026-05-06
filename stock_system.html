@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台湾股票查询系统 - 电竞版</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a3e 50%, #0f0f2e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-start;
+            padding: 20px;
+            color: #00ff88;
+            position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 0, 136, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            background: linear-gradient(135deg, #0f1a33 0%, #1a1a4d 100%);
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.2), 
+                        0 0 60px rgba(255, 0, 136, 0.1),
+                        inset 0 0 20px rgba(0, 255, 136, 0.05);
+            padding: 40px;
+            max-width: 1200px;
+            width: 100%;
+            border: 2px solid rgba(0, 255, 136, 0.3);
+            position: relative;
+            margin: 0 auto;
+            min-height: auto;
+            height: auto;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(0, 255, 136, 0.05) 50%, 
+                transparent 100%);
+            border-radius: 15px;
+            pointer-events: none;
+            animation: scanlines 8s linear infinite;
+        }
+
+        @keyframes scanlines {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(10px); }
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #00ff88;
+            font-size: 32px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5),
+                        0 0 20px rgba(0, 255, 136, 0.3);
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .header p {
+            color: #00ccff;
+            font-size: 14px;
+            text-shadow: 0 0 5px rgba(0, 204, 255, 0.3);
+        }
+
+        .search-section {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.05) 0%, rgba(255, 0, 136, 0.05) 100%);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid rgba(0, 255, 136, 0.3);
+            border-radius: 8px;
+            font-size: 16px;
+            background: rgba(15, 26, 51, 0.8);
+            color: #00ff88;
+            transition: all 0.3s;
+            box-shadow: inset 0 0 10px rgba(0, 255, 136, 0.1);
+        }
+
+        .search-box input::placeholder {
+            color: rgba(0, 255, 136, 0.4);
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #00ff88;
+            box-shadow: inset 0 0 10px rgba(0, 255, 136, 0.1),
+                       0 0 15px rgba(0, 255, 136, 0.5);
+        }
+
+        .search-btn {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #00ff88 0%, #00ccff 100%);
+            color: #0a0e27;
+            border: 2px solid #00ff88;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(0, 255, 136, 0.6);
+        }
+
+        .hot-stocks {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .hot-stock-btn {
+            padding: 8px 15px;
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+            text-shadow: 0 0 5px rgba(0, 255, 136, 0.3);
+        }
+
+        .hot-stock-btn:hover {
+            background: rgba(0, 255, 136, 0.3);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .error {
+            color: #ff0088;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+            text-shadow: 0 0 5px rgba(255, 0, 136, 0.3);
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .stock-info {
+            display: none;
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.08) 0%, rgba(255, 0, 136, 0.08) 100%);
+            border: 2px solid rgba(0, 255, 136, 0.3);
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+            animation: slideIn 0.3s ease;
+        }
+
+        .stock-info.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stock-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .stock-header {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .info-item {
+            background: rgba(0, 26, 51, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .info-label {
+            color: #00ccff;
+            font-size: 13px;
+            text-shadow: 0 0 5px rgba(0, 204, 255, 0.3);
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            color: #00ff88;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+        }
+
+        .info-value.up {
+            color: #00ff88;
+        }
+
+        .info-value.down {
+            color: #ff0088;
+        }
+
+        .stock-name {
+            color: #00ff88;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .stock-code {
+            color: #00ccff;
+            font-size: 14px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-container {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.05) 0%, rgba(255, 0, 136, 0.05) 100%);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+            height: auto;
+            min-height: 300px;
+        }
+
+        .chart-container h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #00ff88;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 255, 136, 0.2);
+            border-top: 4px solid #00ff88;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #00ccff;
+            font-size: 12px;
+            text-shadow: 0 0 5px rgba(0, 204, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content">
+            <div class="header">
+                <h1>📈 台湾股票查询系统 📈</h1>
+                <p>电竞风格 - 实时股票数据和走势分析</p>
+            </div>
+
+            <div class="search-section">
+                <div class="search-box">
+                    <input type="text" id="stockInput" placeholder="输入股票代码 (例: 2330 台积电, 2454 联发科)" maxlength="10">
+                    <button class="search-btn" onclick="searchStock()">🔍 查询</button>
+                </div>
+                <div style="color: #00ccff; font-size: 13px; margin-bottom: 10px;">热门股票:</div>
+                <div class="hot-stocks">
+                    <button class="hot-stock-btn" onclick="searchStockByCode('2330')">2330 (台积电)</button>
+                    <button class="hot-stock-btn" onclick="searchStockByCode('2454')">2454 (联发科)</button>
+                    <button class="hot-stock-btn" onclick="searchStockByCode('2412')">2412 (中华电)</button>
+                    <button class="hot-stock-btn" onclick="searchStockByCode('2317')">2317 (鸿海)</button>
+                    <button class="hot-stock-btn" onclick="searchStockByCode('3008')">3008 (联咏)</button>
+                </div>
+                <div class="error" id="error"></div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>正在获取股票数据...</p>
+            </div>
+
+            <div class="stock-info" id="stockInfo">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div>
+                        <div class="stock-name" id="stockName"></div>
+                        <div class="stock-code" id="stockCode"></div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="info-label">最后更新时间</div>
+                        <div class="info-value" id="updateTime"></div>
+                    </div>
+                </div>
+
+                <div class="stock-header">
+                    <div class="info-item">
+                        <div class="info-label">现价</div>
+                        <div class="info-value" id="currentPrice"></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">涨跌价格</div>
+                        <div class="info-value" id="priceChange"></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">涨跌幅度</div>
+                        <div class="info-value" id="priceChangePercent"></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">成交量 (张)</div>
+                        <div class="info-value" id="volume"></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">最高价</div>
+                        <div class="info-value" id="highPrice"></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">最低价</div>
+                        <div class="info-value" id="lowPrice"></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">开盘价</div>
+                        <div class="info-value" id="openPrice"></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">前收盘价</div>
+                        <div class="info-value" id="closePrice"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-grid" id="chartsGrid" style="display: none;">
+                <div class="chart-container">
+                    <h3>�️ K线图 (MA5/MA10/MA20)</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="klineChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>📊 成交量</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="volumeChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>💼 法人买卖</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="institutionalChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>📈 KD线 (随机指标)</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="kdChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>💹 MACD线</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="macdChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>📉 价格分布</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>💰 股票数据为演示数据 | 电竞风格股票查询系统</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let klineChart = null;
+        let volumeChart = null;
+        let institutionalChart = null;
+        let kdChart = null;
+        let macdChart = null;
+        let distributionChart = null;
+        let currentStockCode = '2330'; // 当前股票代码
+
+        // 模拟股票数据库
+        const stockDatabase = {
+            '2330': {
+                name: '台积电',
+                company: 'Taiwan Semiconductor Manufacturing Company'
+            },
+            '2454': {
+                name: '联发科',
+                company: 'MediaTek Inc.'
+            },
+            '2412': {
+                name: '中华电',
+                company: 'Chunghwa Telecom'
+            },
+            '2317': {
+                name: '鸿海',
+                company: 'Hon Hai Precision Industry'
+            },
+            '3008': {
+                name: '联咏',
+                company: 'Novatek Microelectronics'
+            }
+        };
+
+        function searchStock() {
+            const input = document.getElementById('stockInput').value.trim();
+            if (!input) {
+                showError('请输入股票代码');
+                return;
+            }
+            
+            const code = input.split(' ')[0];
+            searchStockByCode(code);
+        }
+
+        function searchStockByCode(code) {
+            currentStockCode = code; // 保存当前股票代码
+            document.getElementById('stockInput').value = code;
+            const errorDiv = document.getElementById('error');
+            const stockInfo = document.getElementById('stockInfo');
+            const loading = document.getElementById('loading');
+            const chartsGrid = document.getElementById('chartsGrid');
+
+            errorDiv.classList.remove('show');
+            loading.classList.add('show');
+            stockInfo.classList.remove('show');
+            chartsGrid.style.display = 'none';
+
+            // 模拟网络延迟
+            setTimeout(() => {
+                if (stockDatabase[code]) {
+                    displayStockInfo(code);
+                    initCharts();
+                    updateAllCharts(code);
+                    chartsGrid.style.display = 'grid';
+                    loading.classList.remove('show');
+                    stockInfo.classList.add('show');
+                    chartsGrid.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    showError('未找到股票代码: ' + code);
+                    loading.classList.remove('show');
+                }
+            }, 800);
+        }
+
+        function displayStockInfo(code) {
+            const stockData = stockDatabase[code];
+            const mockData = generateMockStockData(code);
+
+            document.getElementById('stockName').textContent = stockData.name;
+            document.getElementById('stockCode').textContent = `代码: ${code}`;
+            document.getElementById('updateTime').textContent = new Date().toLocaleString('zh-CN');
+            document.getElementById('currentPrice').textContent = mockData.currentPrice.toFixed(2);
+            
+            const priceChangeEl = document.getElementById('priceChange');
+            const priceChange = mockData.currentPrice - mockData.openPrice;
+            priceChangeEl.textContent = (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2);
+            priceChangeEl.className = `info-value ${priceChange >= 0 ? 'up' : 'down'}`;
+
+            const percentChangeEl = document.getElementById('priceChangePercent');
+            const percentChange = (priceChange / mockData.openPrice * 100).toFixed(2);
+            percentChangeEl.textContent = (percentChange >= 0 ? '+' : '') + percentChange + '%';
+            percentChangeEl.className = `info-value ${percentChange >= 0 ? 'up' : 'down'}`;
+
+            document.getElementById('volume').textContent = (mockData.volume / 1000).toFixed(0) + 'K';
+            document.getElementById('highPrice').textContent = mockData.highPrice.toFixed(2);
+            document.getElementById('lowPrice').textContent = mockData.lowPrice.toFixed(2);
+            document.getElementById('openPrice').textContent = mockData.openPrice.toFixed(2);
+            document.getElementById('closePrice').textContent = mockData.prevClosePrice.toFixed(2);
+        }
+
+        function generateMockStockData(code) {
+            const basePrice = Math.random() * 300 + 50;
+            return {
+                currentPrice: basePrice,
+                openPrice: basePrice * (0.98 + Math.random() * 0.04),
+                highPrice: basePrice * (1 + Math.random() * 0.05),
+                lowPrice: basePrice * (0.95 + Math.random() * 0.03),
+                prevClosePrice: basePrice * (0.99 + Math.random() * 0.02),
+                volume: Math.floor(Math.random() * 50000 + 10000)
+            };
+        }
+
+        function generateCandleData(days = 30, stockCode = '2330') {
+            // 根据不同股票设置基础价格范围
+            const priceRanges = {
+                '2330': { base: 550, volatility: 8 },      // 台积电
+                '2454': { base: 900, volatility: 12 },     // 联发科
+                '2412': { base: 40, volatility: 0.5 },     // 中华电
+                '2317': { base: 35, volatility: 0.6 },     // 鸿海
+                '3008': { base: 180, volatility: 3 }       // 联咏
+            };
+            
+            const range = priceRanges[stockCode] || { base: 100, volatility: 2 };
+            const data = [];
+            let price = range.base;
+            
+            for (let i = 0; i < days; i++) {
+                const change = (Math.random() - 0.48) * range.volatility;
+                const open = price;
+                const close = price + change;
+                const high = Math.max(open, close) + Math.random() * (range.volatility * 0.5);
+                const low = Math.min(open, close) - Math.random() * (range.volatility * 0.5);
+                price = close;
+                data.push({ o: open, c: close, h: high, l: low });
+            }
+            return data;
+        }
+
+        function initCharts() {
+            initKlineChart();
+            initVolumeChart();
+            initInstitutionalChart();
+            initKDChart();
+            initMACDChart();
+            initDistributionChart();
+        }
+
+        function initKlineChart() {
+            const ctx = document.getElementById('klineChart').getContext('2d');
+            // 获取当前查询的股票代码
+            const stockCode = document.getElementById('stockInput').value.split(' ')[0];
+            const candleData = generateCandleData(30, stockCode);
+            const labels = [];
+            const ma5Data = [];
+            const ma10Data = [];
+            const ma20Data = [];
+
+            // 准备K线数据和颜色
+            const closes = [];
+            const colors = [];
+            
+            for (let i = 0; i < candleData.length; i++) {
+                labels.push(`${i + 1}日`);
+                const closePrice = candleData[i].c;
+                closes.push(closePrice.toFixed(2));
+                
+                // 判断上涨(红色)还是下跌(绿色)
+                colors.push(candleData[i].c >= candleData[i].o ? 'rgba(255, 0, 0, 0.7)' : 'rgba(0, 200, 0, 0.7)');
+
+                // 计算移动平均线
+                const slice5 = candleData.slice(Math.max(0, i - 4), i + 1);
+                const avg5 = slice5.reduce((sum, d) => sum + d.c, 0) / slice5.length;
+                ma5Data.push(avg5.toFixed(2));
+
+                const slice10 = candleData.slice(Math.max(0, i - 9), i + 1);
+                const avg10 = slice10.reduce((sum, d) => sum + d.c, 0) / slice10.length;
+                ma10Data.push(avg10.toFixed(2));
+
+                const slice20 = candleData.slice(Math.max(0, i - 19), i + 1);
+                const avg20 = slice20.reduce((sum, d) => sum + d.c, 0) / slice20.length;
+                ma20Data.push(avg20.toFixed(2));
+            }
+
+            if (klineChart) klineChart.destroy();
+            
+            klineChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: 'K线 (上涨红色/下跌绿色)',
+                            data: closes,
+                            backgroundColor: colors,
+                            borderColor: colors,
+                            borderWidth: 1,
+                            borderRadius: 0,
+                            barPercentage: 0.7,
+                            categoryPercentage: 0.8
+                        },
+                        {
+                            type: 'line',
+                            label: 'MA5',
+                            data: ma5Data,
+                            borderColor: '#ffff00',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.3,
+                            pointRadius: 1,
+                            borderDash: [5, 5]
+                        },
+                        {
+                            type: 'line',
+                            label: 'MA10',
+                            data: ma10Data,
+                            borderColor: '#ff6600',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.3,
+                            pointRadius: 1,
+                            borderDash: [5, 5]
+                        },
+                        {
+                            type: 'line',
+                            label: 'MA20',
+                            data: ma20Data,
+                            borderColor: '#00ccff',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.3,
+                            pointRadius: 1,
+                            borderDash: [5, 5]
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#00ff88',
+                                font: { size: 11 }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#00ccff', maxTicksLimit: 10 },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        },
+                        y: {
+                            ticks: { color: '#00ccff' },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initVolumeChart() {
+            const ctx = document.getElementById('volumeChart').getContext('2d');
+            const days = 20;
+            const labels = [];
+            const volumes = [];
+
+            for (let i = 0; i < days; i++) {
+                labels.push(`${i + 1}日`);
+                volumes.push(Math.floor(Math.random() * 50000 + 10000));
+            }
+
+            if (volumeChart) volumeChart.destroy();
+            
+            volumeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '成交量 (张)',
+                        data: volumes,
+                        backgroundColor: volumes.map(v => v > 30000 ? 'rgba(0, 255, 136, 0.7)' : 'rgba(0, 204, 255, 0.7)'),
+                        borderColor: volumes.map(v => v > 30000 ? 'rgba(0, 255, 136, 1)' : 'rgba(0, 204, 255, 1)'),
+                        borderWidth: 1,
+                        borderRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#00ff88',
+                                font: { size: 12 }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#00ccff', maxTicksLimit: 10 },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        },
+                        y: {
+                            ticks: { color: '#00ccff' },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initInstitutionalChart() {
+            const ctx = document.getElementById('institutionalChart').getContext('2d');
+            const days = 15;
+            const labels = [];
+            const buyData = [];
+            const sellData = [];
+
+            for (let i = 0; i < days; i++) {
+                labels.push(`${i + 1}日`);
+                buyData.push(Math.floor(Math.random() * 5000 + 1000));
+                sellData.push(Math.floor(Math.random() * 5000 + 1000));
+            }
+
+            if (institutionalChart) institutionalChart.destroy();
+            
+            institutionalChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '法人买进',
+                            data: buyData,
+                            backgroundColor: 'rgba(0, 255, 136, 0.7)',
+                            borderColor: 'rgba(0, 255, 136, 1)',
+                            borderWidth: 1,
+                            borderRadius: 3
+                        },
+                        {
+                            label: '法人卖出',
+                            data: sellData.map(v => -v),
+                            backgroundColor: 'rgba(255, 0, 136, 0.7)',
+                            borderColor: 'rgba(255, 0, 136, 1)',
+                            borderWidth: 1,
+                            borderRadius: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#00ff88',
+                                font: { size: 12 }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#00ccff', maxTicksLimit: 8 },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        },
+                        y: {
+                            ticks: { color: '#00ccff' },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initKDChart() {
+            const ctx = document.getElementById('kdChart').getContext('2d');
+            const days = 30;
+            const labels = [];
+            const kValues = [];
+            const dValues = [];
+
+            let k = 50;
+            let d = 50;
+            for (let i = 0; i < days; i++) {
+                labels.push(`${i + 1}日`);
+                k += (Math.random() - 0.5) * 15;
+                k = Math.max(0, Math.min(100, k));
+                d = d * 0.7 + k * 0.3;
+                kValues.push(k.toFixed(1));
+                dValues.push(d.toFixed(1));
+            }
+
+            if (kdChart) kdChart.destroy();
+            
+            kdChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'K线',
+                            data: kValues,
+                            borderColor: '#00ff88',
+                            backgroundColor: 'rgba(0, 255, 136, 0.05)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.3,
+                            pointRadius: 2
+                        },
+                        {
+                            label: 'D线',
+                            data: dValues,
+                            borderColor: '#00ccff',
+                            backgroundColor: 'rgba(0, 204, 255, 0.05)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.3,
+                            pointRadius: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#00ff88',
+                                font: { size: 12 }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#00ccff', maxTicksLimit: 10 },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        },
+                        y: {
+                            ticks: { color: '#00ccff' },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' },
+                            min: 0,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        function initMACDChart() {
+            const ctx = document.getElementById('macdChart').getContext('2d');
+            const days = 30;
+            const labels = [];
+            const dif = [];
+            const dea = [];
+            const histogram = [];
+
+            let difValue = 0;
+            let deaValue = 0;
+            for (let i = 0; i < days; i++) {
+                labels.push(`${i + 1}日`);
+                difValue += (Math.random() - 0.5) * 0.5;
+                deaValue = deaValue * 0.7 + difValue * 0.3;
+                const hist = difValue - deaValue;
+                dif.push(difValue.toFixed(3));
+                dea.push(deaValue.toFixed(3));
+                histogram.push(hist.toFixed(3));
+            }
+
+            if (macdChart) macdChart.destroy();
+            
+            macdChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: 'DIF',
+                            data: dif,
+                            borderColor: '#00ff88',
+                            backgroundColor: 'rgba(0, 255, 136, 0.05)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.3,
+                            pointRadius: 2
+                        },
+                        {
+                            type: 'line',
+                            label: 'DEA',
+                            data: dea,
+                            borderColor: '#00ccff',
+                            backgroundColor: 'rgba(0, 204, 255, 0.05)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.3,
+                            pointRadius: 2
+                        },
+                        {
+                            type: 'bar',
+                            label: 'MACD柱',
+                            data: histogram,
+                            backgroundColor: histogram.map(h => parseFloat(h) >= 0 ? 'rgba(0, 255, 136, 0.5)' : 'rgba(255, 0, 136, 0.5)'),
+                            borderWidth: 0,
+                            borderRadius: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#00ff88',
+                                font: { size: 12 }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#00ccff', maxTicksLimit: 10 },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        },
+                        y: {
+                            ticks: { color: '#00ccff' },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initDistributionChart() {
+            const ctx = document.getElementById('distributionChart').getContext('2d');
+            
+            if (distributionChart) distributionChart.destroy();
+            
+            distributionChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['大幅上涨 (+5%以上)', '温和上涨 (+0~5%)', '温和下跌 (-0~5%)', '大幅下跌 (-5%以下)'],
+                    datasets: [{
+                        data: [25, 40, 25, 10],
+                        backgroundColor: [
+                            'rgba(0, 255, 136, 0.7)',
+                            'rgba(0, 204, 255, 0.7)',
+                            'rgba(255, 165, 0, 0.7)',
+                            'rgba(255, 0, 136, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(0, 255, 136, 1)',
+                            'rgba(0, 204, 255, 1)',
+                            'rgba(255, 165, 0, 1)',
+                            'rgba(255, 0, 136, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#00ff88',
+                                font: { size: 11 },
+                                padding: 15
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateAllCharts(code) {
+            // 图表已在初始化时创建
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.classList.add('show');
+            document.getElementById('stockInfo').classList.remove('show');
+            document.getElementById('chartsGrid').style.display = 'none';
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        // 支持回车键搜索
+        document.getElementById('stockInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchStock();
+            }
+        });
+    </script>
+</body>
+</html>
