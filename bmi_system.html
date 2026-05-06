@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMI 计算系统 - 电竞版</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a3e 50%, #0f0f2e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-start;
+            padding: 20px;
+            color: #00ff88;
+            position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 0, 136, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            background: linear-gradient(135deg, #0f1a33 0%, #1a1a4d 100%);
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.2), 
+                        0 0 60px rgba(255, 0, 136, 0.1),
+                        inset 0 0 20px rgba(0, 255, 136, 0.05);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            border: 2px solid rgba(0, 255, 136, 0.3);
+            position: relative;
+            margin: 0 auto;
+            min-height: auto;
+            height: auto;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(0, 255, 136, 0.05) 50%, 
+                transparent 100%);
+            border-radius: 15px;
+            pointer-events: none;
+            animation: scanlines 8s linear infinite;
+        }
+
+        @keyframes scanlines {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(10px); }
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #00ff88;
+            font-size: 32px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5),
+                        0 0 20px rgba(0, 255, 136, 0.3);
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .header p {
+            color: #00ccff;
+            font-size: 14px;
+            text-shadow: 0 0 5px rgba(0, 204, 255, 0.3);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .bmi-chart {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.05) 0%, rgba(255, 0, 136, 0.05) 100%);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            font-size: 13px;
+        }
+
+        .bmi-chart h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .bmi-chart-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            color: #00ccff;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .bmi-chart-item:last-child {
+            border-bottom: none;
+        }
+
+        .bmi-chart-item:hover {
+            color: #00ff88;
+            padding-left: 10px;
+            text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #00ff88;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+            text-shadow: 0 0 5px rgba(0, 255, 136, 0.3);
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(0, 255, 136, 0.3);
+            border-radius: 8px;
+            font-size: 16px;
+            background: rgba(15, 26, 51, 0.8);
+            color: #00ff88;
+            transition: all 0.3s;
+            box-shadow: inset 0 0 10px rgba(0, 255, 136, 0.1);
+        }
+
+        input::placeholder {
+            color: rgba(0, 255, 136, 0.4);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #00ff88;
+            box-shadow: inset 0 0 10px rgba(0, 255, 136, 0.1),
+                       0 0 15px rgba(0, 255, 136, 0.5);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-group input {
+            flex: 1;
+        }
+
+        .unit {
+            display: flex;
+            align-items: center;
+            color: #00ccff;
+            font-weight: 600;
+            font-size: 14px;
+            text-shadow: 0 0 5px rgba(0, 204, 255, 0.3);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #00ff88 0%, #00ccff 100%);
+            color: #0a0e27;
+            border: 2px solid #00ff88;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(0, 255, 136, 0.6),
+                       0 0 40px rgba(0, 204, 255, 0.3);
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .chart-container {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.05) 0%, rgba(255, 0, 136, 0.05) 100%);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            position: relative;
+            height: auto;
+            min-height: 300px;
+        }
+
+        .chart-container h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 280px;
+            width: 100%;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .result {
+            display: none;
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.08) 0%, rgba(255, 0, 136, 0.08) 100%);
+            border: 2px solid rgba(0, 255, 136, 0.3);
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 30px;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+        }
+
+        .result.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .result-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .result-item {
+            background: rgba(0, 26, 51, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .result-item label {
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #00ccff;
+            text-shadow: 0 0 5px rgba(0, 204, 255, 0.3);
+        }
+
+        .result-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+        }
+
+        .bmi-number {
+            font-size: 36px;
+            color: #00ff88;
+            text-shadow: 0 0 15px rgba(0, 255, 136, 0.6);
+        }
+
+        .category {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 5px;
+            border: 2px solid;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .category.underweight {
+            background: rgba(0, 200, 255, 0.2);
+            color: #00ccff;
+            border-color: #00ccff;
+            box-shadow: 0 0 10px rgba(0, 204, 255, 0.3);
+        }
+
+        .category.normal {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border-color: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .category.overweight {
+            background: rgba(255, 165, 0, 0.2);
+            color: #ffaa00;
+            border-color: #ffaa00;
+            box-shadow: 0 0 10px rgba(255, 165, 0, 0.3);
+        }
+
+        .category.obese {
+            background: rgba(255, 0, 136, 0.2);
+            color: #ff0088;
+            border-color: #ff0088;
+            box-shadow: 0 0 10px rgba(255, 0, 136, 0.3);
+        }
+
+        .advice {
+            background: rgba(0, 26, 51, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .advice h4 {
+            color: #00ff88;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-shadow: 0 0 5px rgba(0, 255, 136, 0.3);
+        }
+
+        .advice ul {
+            list-style: none;
+            color: #00ccff;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .advice li {
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .advice li:hover {
+            padding-left: 30px;
+            color: #00ff88;
+            text-shadow: 0 0 5px rgba(0, 255, 136, 0.3);
+        }
+
+        .advice li:before {
+            content: "▶";
+            position: absolute;
+            left: 0;
+            color: #ff0088;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #ff0088;
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+            text-shadow: 0 0 5px rgba(255, 0, 136, 0.3);
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .reset-btn {
+            background: linear-gradient(135deg, rgba(255, 0, 136, 0.8) 0%, rgba(255, 165, 0, 0.8) 100%);
+            color: #fff;
+            margin-top: 15px;
+            border-color: #ff0088;
+            box-shadow: 0 0 15px rgba(255, 0, 136, 0.4);
+        }
+
+        .reset-btn:hover {
+            box-shadow: 0 0 25px rgba(255, 0, 136, 0.6);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #00ccff;
+            font-size: 12px;
+            text-shadow: 0 0 5px rgba(0, 204, 255, 0.3);
+        }
+    </style>
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content">
+            <div class="header">
+                <h1>⚡ BMI 计算系统 ⚡</h1>
+                <p>电竞风格 - 计算身体质量指数并获取健康建议</p>
+            </div>
+
+            <div class="main-grid">
+                <div>
+                    <div class="bmi-chart">
+                        <h3>📈 BMI 分类标准</h3>
+                        <div class="bmi-chart-item">
+                            <span>BMI &lt; 18.5</span>
+                            <span>➜ 偏瘦</span>
+                        </div>
+                        <div class="bmi-chart-item">
+                            <span>18.5 ≤ BMI &lt; 24.9</span>
+                            <span>➜ 正常</span>
+                        </div>
+                        <div class="bmi-chart-item">
+                            <span>25 ≤ BMI &lt; 29.9</span>
+                            <span>➜ 超重</span>
+                        </div>
+                        <div class="bmi-chart-item">
+                            <span>BMI ≥ 30</span>
+                            <span>➜ 肥胖</span>
+                        </div>
+                    </div>
+
+                    <form id="bmiForm">
+                        <div class="form-group">
+                            <label for="height">身高</label>
+                            <div class="input-group">
+                                <input type="number" id="height" placeholder="请输入身高" step="0.1" required>
+                                <div class="unit">厘米</div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="weight">体重</label>
+                            <div class="input-group">
+                                <input type="number" id="weight" placeholder="请输入体重" step="0.1" required>
+                                <div class="unit">公斤</div>
+                            </div>
+                        </div>
+
+                        <div class="error" id="error"></div>
+                        <button type="submit">🎮 计算 BMI 🎮</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="charts-grid" id="chartsSection" style="display: none;">
+                <div class="chart-container">
+                    <h3>📊 BMI 分布图表</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="bmiChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>💹 BMI 范围对比</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>📈 您的 BMI 趋势</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>⚖️ 健康体重范围</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="healthRangeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result" id="result">
+                <div class="result-grid">
+                    <div class="result-item">
+                        <label>您的身高</label>
+                        <div class="result-value"><span id="resultHeight"></span> 厘米</div>
+                    </div>
+
+                    <div class="result-item">
+                        <label>您的体重</label>
+                        <div class="result-value"><span id="resultWeight"></span> 公斤</div>
+                    </div>
+                </div>
+
+                <div class="result-item">
+                    <label>BMI 值</label>
+                    <div class="result-value">
+                        <span class="bmi-number" id="bmiValue"></span>
+                    </div>
+                    <div class="category" id="categoryBadge"></div>
+                </div>
+
+                <div class="advice">
+                    <h4>💡 健康建议</h4>
+                    <ul id="adviceList"></ul>
+                </div>
+
+                <button type="button" class="reset-btn" onclick="resetForm()">🔄 重新计算</button>
+            </div>
+
+            <div class="footer">
+                <p>💪 健康从了解自己开始 | 电竞风格 BMI 计算</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let bmiChart = null;
+        let categoryChart = null;
+        let trendChart = null;
+        let healthRangeChart = null;
+        const bmiHistory = [];
+
+        const form = document.getElementById('bmiForm');
+        const heightInput = document.getElementById('height');
+        const weightInput = document.getElementById('weight');
+        const errorDiv = document.getElementById('error');
+        const resultDiv = document.getElementById('result');
+        const chartsSection = document.getElementById('chartsSection');
+
+        // 初始化所有图表
+        function initCharts() {
+            initBmiChart();
+            initCategoryChart();
+            initTrendChart();
+            initHealthRangeChart();
+        }
+
+        function initBmiChart() {
+            const ctx = document.getElementById('bmiChart').getContext('2d');
+            bmiChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['偏瘦', '正常', '超重', '肥胖'],
+                    datasets: [{
+                        data: [15, 50, 25, 10],
+                        backgroundColor: [
+                            'rgba(0, 204, 255, 0.7)',
+                            'rgba(0, 255, 136, 0.7)',
+                            'rgba(255, 165, 0, 0.7)',
+                            'rgba(255, 0, 136, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(0, 204, 255, 1)',
+                            'rgba(0, 255, 136, 1)',
+                            'rgba(255, 165, 0, 1)',
+                            'rgba(255, 0, 136, 1)'
+                        ],
+                        borderWidth: 3,
+                        borderJoinStyle: 'bevel'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#00ff88',
+                                font: { size: 12, weight: 'bold' },
+                                padding: 15,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initCategoryChart() {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['偏瘦', '正常', '超重', '肥胖'],
+                    datasets: [{
+                        label: 'BMI 分布百分比',
+                        data: [15, 50, 25, 10],
+                        backgroundColor: [
+                            'rgba(0, 204, 255, 0.7)',
+                            'rgba(0, 255, 136, 0.7)',
+                            'rgba(255, 165, 0, 0.7)',
+                            'rgba(255, 0, 136, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(0, 204, 255, 1)',
+                            'rgba(0, 255, 136, 1)',
+                            'rgba(255, 165, 0, 1)',
+                            'rgba(255, 0, 136, 1)'
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#00ff88',
+                                font: { size: 12 }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#00ccff' },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        },
+                        y: {
+                            ticks: { color: '#00ccff' },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initTrendChart() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['数据1', '数据2', '数据3', '数据4', '数据5'],
+                    datasets: [{
+                        label: 'BMI 值',
+                        data: [22, 22.5, 23, 22.8, 23.2],
+                        borderColor: '#00ff88',
+                        backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#ff0088',
+                        pointBorderColor: '#00ff88',
+                        pointBorderWidth: 2,
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#00ff88',
+                                font: { size: 12 }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#00ccff' },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        },
+                        y: {
+                            ticks: { color: '#00ccff' },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' },
+                            min: 15,
+                            max: 35
+                        }
+                    }
+                }
+            });
+        }
+
+        function initHealthRangeChart() {
+            const ctx = document.getElementById('healthRangeChart').getContext('2d');
+            const height = 170; // 默认值
+            const minWeight = (18.5 * (height / 100) ** 2).toFixed(1);
+            const maxWeight = (24.9 * (height / 100) ** 2).toFixed(1);
+            
+            healthRangeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['偏轻', '健康范围', '超重'],
+                    datasets: [{
+                        label: '推荐体重 (kg)',
+                        data: [minWeight * 0.8, maxWeight - minWeight, 500 - maxWeight],
+                        backgroundColor: [
+                            'rgba(0, 204, 255, 0.7)',
+                            'rgba(0, 255, 136, 0.7)',
+                            'rgba(255, 0, 136, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(0, 204, 255, 1)',
+                            'rgba(0, 255, 136, 1)',
+                            'rgba(255, 0, 136, 1)'
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    indexAxis: 'x',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#00ff88',
+                                font: { size: 12 }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#00ccff' },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        },
+                        y: {
+                            ticks: { color: '#00ccff' },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            calculateBMI();
+        });
+
+        function calculateBMI() {
+            errorDiv.classList.remove('show');
+            errorDiv.textContent = '';
+
+            const height = parseFloat(heightInput.value);
+            const weight = parseFloat(weightInput.value);
+
+            if (!height || !weight) {
+                showError('请输入身高和体重');
+                return;
+            }
+
+            if (height <= 0 || height > 300) {
+                showError('身高必须在 1-300 厘米之间');
+                return;
+            }
+
+            if (weight <= 0 || weight > 500) {
+                showError('体重必须在 1-500 公斤之间');
+                return;
+            }
+
+            const heightInMeters = height / 100;
+            const bmi = weight / (heightInMeters * heightInMeters);
+            const roundedBMI = Math.round(bmi * 100) / 100;
+
+            const { category, categoryName, advice } = getBMICategory(roundedBMI);
+
+            displayResult(height, weight, roundedBMI, category, categoryName, advice);
+            updateAllCharts(height, weight, roundedBMI);
+            
+            chartsSection.style.display = 'grid';
+            chartsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function getBMICategory(bmi) {
+            let categoryName, category, advice;
+
+            if (bmi < 18.5) {
+                categoryName = '偏瘦';
+                category = 'underweight';
+                advice = [
+                    '增加营养摄入，多吃高热量食物',
+                    '进行适度的力量训练以增加肌肉',
+                    '定期体检以排除其他健康问题',
+                    '保证充足的睡眠和休息'
+                ];
+            } else if (bmi < 24.9) {
+                categoryName = '正常';
+                category = 'normal';
+                advice = [
+                    '保持现有的健康生活方式',
+                    '继续均衡饮食和规律运动',
+                    '每年进行一次体检',
+                    '定期参加体育活动'
+                ];
+            } else if (bmi < 29.9) {
+                categoryName = '超重';
+                category = 'overweight';
+                advice = [
+                    '增加有氧运动，每周至少 150 分钟',
+                    '减少高热量食物和糖分摄入',
+                    '咨询营养师制定合理的饮食计划',
+                    '控制每日摄入热量'
+                ];
+            } else {
+                categoryName = '肥胖';
+                category = 'obese';
+                advice = [
+                    '立即咨询医生或营养师',
+                    '制定科学的减肥计划',
+                    '增加体育运动，循序渐进',
+                    '改变不良饮食习惯',
+                    '定期监测健康指标'
+                ];
+            }
+
+            return { category, categoryName, advice };
+        }
+
+        function updateAllCharts(height, weight, bmi) {
+            updateBmiChart(bmi);
+            updateCategoryChart(bmi);
+            updateTrendChart(bmi);
+            updateHealthRangeChart(height);
+        }
+
+        function updateBmiChart(bmi) {
+            if (!bmiChart) return;
+            
+            let newData = [15, 50, 25, 10];
+            let categoryIndex = 0;
+            
+            if (bmi < 18.5) categoryIndex = 0;
+            else if (bmi < 24.9) categoryIndex = 1;
+            else if (bmi < 29.9) categoryIndex = 2;
+            else categoryIndex = 3;
+            
+            newData[categoryIndex] = Math.max(newData[categoryIndex], 60);
+            
+            bmiChart.data.datasets[0].data = newData;
+            bmiChart.update('active');
+        }
+
+        function updateCategoryChart(bmi) {
+            if (!categoryChart) return;
+            
+            let data = [15, 50, 25, 10];
+            let categoryIndex = 0;
+            
+            if (bmi < 18.5) categoryIndex = 0;
+            else if (bmi < 24.9) categoryIndex = 1;
+            else if (bmi < 29.9) categoryIndex = 2;
+            else categoryIndex = 3;
+            
+            data[categoryIndex] = Math.max(data[categoryIndex], 60);
+            
+            categoryChart.data.datasets[0].data = data;
+            categoryChart.update('active');
+        }
+
+        function updateTrendChart(bmi) {
+            if (!trendChart) return;
+            
+            bmiHistory.push(bmi);
+            if (bmiHistory.length > 10) {
+                bmiHistory.shift();
+            }
+            
+            trendChart.data.labels = bmiHistory.map((_, i) => `数据${i + 1}`);
+            trendChart.data.datasets[0].data = bmiHistory;
+            trendChart.update('active');
+        }
+
+        function updateHealthRangeChart(height) {
+            if (!healthRangeChart) return;
+            
+            const minWeight = (18.5 * (height / 100) ** 2).toFixed(1);
+            const maxWeight = (24.9 * (height / 100) ** 2).toFixed(1);
+            
+            const healthRange = maxWeight - minWeight;
+            const underWeight = minWeight * 0.8;
+            const overWeight = 500 - maxWeight;
+            
+            healthRangeChart.data.datasets[0].data = [underWeight, healthRange, overWeight];
+            healthRangeChart.update('active');
+        }
+
+        function displayResult(height, weight, bmi, category, categoryName, advice) {
+            document.getElementById('resultHeight').textContent = height;
+            document.getElementById('resultWeight').textContent = weight;
+            document.getElementById('bmiValue').textContent = bmi;
+
+            const badge = document.getElementById('categoryBadge');
+            badge.textContent = categoryName;
+            badge.className = `category ${category}`;
+
+            const adviceList = document.getElementById('adviceList');
+            adviceList.innerHTML = '';
+            advice.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = item;
+                adviceList.appendChild(li);
+            });
+
+            resultDiv.classList.add('show');
+        }
+
+        function showError(message) {
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.classList.add('show');
+            resultDiv.classList.remove('show');
+            chartsSection.style.display = 'none';
+        }
+
+        function resetForm() {
+            form.reset();
+            resultDiv.classList.remove('show');
+            errorDiv.classList.remove('show');
+            chartsSection.style.display = 'none';
+            heightInput.focus();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            heightInput.focus();
+        });
+    </script>
+</body>
+</html>
